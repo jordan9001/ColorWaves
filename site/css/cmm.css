@@ -1,0 +1,29 @@
+
+html, body {
+	width:  100%;
+	margin: 0px;
+	background-color: #eeeeee;
+}
+
+#color_canvas {
+	display: inline-block;
+	position: relative;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	image-rendering: -moz-crisp-edges;
+	image-rendering: -webkit-crisp-edges;
+	image-rendering: pixelated;
+}
+
+#container {
+    text-align: center;
+	position: relative;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	z-index: 0;
+}
