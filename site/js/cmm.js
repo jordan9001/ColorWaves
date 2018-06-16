@@ -34,6 +34,21 @@ function CNode() {
     this.points = [];
 }
 
+CNode.prototype.sort = function() {
+    this.points.sort(function(a, b) {
+        return a.looppos - b.looppos;
+    });
+}
+
+CNode.prototype.addpoint = function(color, gpos, lpos) {
+    let p = new CNodePoint();
+    p.color = color;
+    p.gradpos = gpos;
+    p.looppos = lpos;
+    this.points.push(p);
+    this.sort();
+}
+
 CNode.prototype.pointat = function(looppos) {
     if (this.points.length == 0) {
         return null;
@@ -120,7 +135,7 @@ CControler.prototype.draw = function() {
     // Set this higher for higher rez
     let ch = this.canvas.height - (this.ypad*2);
     let cw = this.canvas.width - (this.xpad*2);
-    let dp = 10;
+    let dp = 3;
     for (let i=0; i<ch; i += dp) {
         let per = i / ch;
         pts = this.getpointsat(per);
@@ -139,7 +154,19 @@ CControler.prototype.draw = function() {
     this.ctx.strokeRect(this.xpad, this.ypad, cw, ch);
 
     // draw interactive stuff
-    // if mouseover node, draw lines connecting it all the way down
+    for (let i=0; i<this.nodes.length; i++) {
+        for (let j=0; j<this.nodes[i].points.length; j++) {
+            pt = this.nodes[i].points[j];
+            // draw a line to the next node
+            // draw a little circle
+            this.ctx.beginPath();
+            this.ctx.arc(this.xpad + (cw * pt.gradpos), this.ypad + (ch * pt.looppos), this.ypad, 0, 2*Math.PI);
+            this.ctx.closePath();
+            this.ctx.fillStyle = num2color(pt.color);
+            this.ctx.fill();
+            this.ctx.stroke();
+        }
+    }
 }
 
 CControler.prototype.getpointsat = function(p) {
