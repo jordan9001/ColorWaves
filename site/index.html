@@ -9,7 +9,20 @@
 	</head>
 	<body>
 		<div id="container">
-			<canvas id="color_canvas">Loading...</canvas>
+			<div class="row">
+				<div class="col m4">
+					<div id="colorgroup" class="row">
+						<div id="colorpicker" class="col f9"></div>
+						<div id="colorslider" class="col f3"></div>
+						<input id="rinp" class="col f4" oninput="get_color()" type="number" min="0" max="255" value="255"/>
+						<input id="ginp" class="col f4" oninput="get_color()" type="number" min="0" max="255" value="255"/>
+						<input id="binp" class="col f4" oninput="get_color()" type="number" min="0" max="255" value="255"/>
+					</div>
+				</div>
+				<div class="col m8">
+					<canvas id="color_canvas">Loading...</canvas>
+				</div>
+			</div>
 		</div>
 		<script src="./js/cmm.js"></script>
 	</body>
