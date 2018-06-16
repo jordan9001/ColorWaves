@@ -127,7 +127,8 @@ function CControler(can) {
     let dn = new CNode();
     let dp = new CNodePoint();
     dp.color = 0xff0000;
-    dp.looppos = 0.0;
+    dp.looppos = 0.1;
+    dp.gradpos = 0.1;
     dn.points.push(dp);
     dp = new CNodePoint();
     dp.color = 0x0000ff;
@@ -143,7 +144,7 @@ function CControler(can) {
     dp.looppos = 0.15;
     dn.points.push(dp);
     dp = new CNodePoint();
-    dp.color = 0x000000;
+    dp.color = 0xba1f30;
     dp.gradpos = 0.9;
     dp.looppos = 0.3;
     dn.points.push(dp);
@@ -381,12 +382,19 @@ doccanvas.addEventListener("mousemove", function(evt) {
     color_control.mousey = fy;
 
     //if mouse is down, drag the point with it
-    if (color_control.mousedw) {
+    if (color_control.mousedw && fx != -1) {
         let lpos = (fy - color_control.ypad) / (doccanvas.height - (2 * color_control.ypad));
         let gpos = (fx - color_control.xpad) / (doccanvas.width - (2 * color_control.xpad));
         color_control.sel_pt.gradpos = gpos;
         color_control.sel_pt.looppos = lpos;
     }
+
+    color_control.draw();
+});
+
+doccanvas.addEventListener("mouseleave", function(evt) {
+    color_control.mousex = -1;
+    color_control.mousey = -1;
 
     color_control.draw();
 });

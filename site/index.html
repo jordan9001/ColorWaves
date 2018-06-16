@@ -18,8 +18,22 @@
 						<input id="ginp" class="col f4" oninput="get_color()" type="number" min="0" max="255" value="255"/>
 						<input id="binp" class="col f4" oninput="get_color()" type="number" min="0" max="255" value="255"/>
 					</div>
+					<div class="row">
+						<div class="col m6">
+							<label for="looptime">Loop Time (sec)</label>
+						</div>
+						<div class="col m6">
+							<input id="looptime" type="number" min="1" max="300" value="15"/>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col m12">
+							<input id="submit" type="button" value="Submit"/>
+						</div>
+						
+					</div>
 				</div>
-				<div class="col m8">
+				<div class="col f6">
 					<canvas id="color_canvas">Loading...</canvas>
 				</div>
 			</div>
