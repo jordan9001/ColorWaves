@@ -321,6 +321,25 @@ CControler.prototype.getpointsat = function(p) {
     return nds;
 }
 
+CControler.prototype.getJson = function(looptime) {
+    let outobj = {};
+    outobj.n = [];
+    for (let i=0; i<this.nodes.length; i++) {
+        let nd = [];
+        for (let j=0; j<this.nodes[i].points.length; j++) {
+            let o = {}
+            o.c = this.nodes[i].points[j].color;
+            o.g = this.nodes[i].points[j].gradpos;
+            o.l = this.nodes[i].points[j].looppos;
+            // server will do the hardware specific translation
+            nd.push(o);
+        }
+        outobj.n.push(nd);
+    }
+    outobj.t = looptime;
+    return JSON.stringify(outobj);
+}
+
 // on startup
 // get handles to dom stuff
 let cwidth = 0.5; // percent width
@@ -332,6 +351,8 @@ let cgroup = document.getElementById('colorgroup');
 let rpicker = document.getElementById("rinp");
 let gpicker = document.getElementById("ginp");
 let bpicker = document.getElementById("binp");
+let gobutton = document.getElementById("gobutton");
+let timeval = document.getElementById("looptime");
 
 function pick_color(hex, hsv, rgb) {
 	let r = rgb.r;
@@ -467,4 +488,14 @@ doccanvas.addEventListener("contextmenu", function(evt) {
 
 window.addEventListener("mouseup", function(evt) {
     color_control.mousedw = false;
+});
+
+// go on go
+gobutton.addEventListener("click", function(evt) {
+    j = color_control.getJson(+(timeval.value));
+    // send it to server
+    let xhttp = new XMLHttpRequest();
+    xhttp.open("POST", document.location.pathname, true);
+    xhttp.setRequestHeader("Content-type", "application/json");
+    xhttp.send(j);
 });

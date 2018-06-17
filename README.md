@@ -3,19 +3,19 @@ A setup for sending color loops to strings of addressable leds with a nice web i
 
 ## TODO
 
+* Send the data to the server
+
+* Server talking to hardware
+
+* Save Presets
+
 * ESP to lights
 
 * ESP to network
 
-* Send the data to the server
-
-* Server talking to ESP
-
 * ESP parsing data
 
 * Client Validation for ESP
-
-* Save Presets
 
 * Random Color
 
