@@ -1,7 +1,7 @@
 *personal*
 .vscode
 *.exe
-
+*.bin
 
 
 ## Ignore Visual Studio temporary files, build results, and
