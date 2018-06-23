@@ -154,6 +154,14 @@ bool GradientAnimator::getGradient(uint32_t* colors, uint16_t len, int32_t ms) {
     return true;
 }
 
+void GradientAnimator::setLooptime(int32_t ms) {
+    looptime = ms;
+}
+
+int32_t GradientAnimator::getLooptime() {
+    return looptime;
+}
+
 uint32_t GradientAnimator::color_lerp(uint32_t ac, uint32_t bc, uint16_t index, uint_16_t len) {
     uint8_t r;
     uint8_t g;

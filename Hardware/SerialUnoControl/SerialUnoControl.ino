@@ -3,6 +3,8 @@
 
 #define PIN            6  // data pin
 #define NUMPIXELS      150
+#define DTIME          100 // ms
+#define ERROR_DELAY    3000
 
 struct serialPoint {
   uint32_t color;
@@ -21,33 +23,35 @@ void setup() {
 
 void loop() {
   // For a set of NeoPixels the first NeoPixel is 0, second is 1, all the way up to the count of pixels minus one.
-  uint32_t c = pixels.Color(0,150,0);
-  Serial.print("Setting for ");
-  Serial.print(NUMPIXELS);
-  Serial.print(" to color ");
-  Serial.println(c, HEX);
-  for(int i=0;i<NUMPIXELS;i++){
-    Serial.println(i);
-    // pixels.Color takes RGB values, from 0,0,0 up to 255,255,255
-    pixels.setPixelColor(i, pixels.Color(0,150,0)); // Moderately bright green color.
-
-    pixels.show(); // This sends the updated pixel color to the hardware.
-
-    delay(100); // Delay for a period of time (in milliseconds).
-
+  static uint32_t colors[NUMPIXELS];
+  static int32_t t = 0;
+  if (!ga.getGradient(colors, NUMPIXELS, t)) {
+    // error
+    delay(ERROR_DELAY);
+    return;
   }
-  delay(3000);
+
+  for(int i=0;i<NUMPIXELS;i++){
+    pixels.setPixelColor(i, colors[i]);
+  }
+  pixels.show();
+
+  t = (t + DTIME) % ga.getLooptime();
+
+  delay(DTIME);
 }
 
 // Serial callback
 //
 // uin16_t bytes_in_message
+// int32_t looptime
 //  (for each node)
 //    uint16_t number of points
 //      (for each point)
 //        uint32_t color
 //        int32_t msoff
 //        uint16_t index
+//TODO move this to the lib
 
 void serialEvent() {
   static uint16_t bytes_to_read = 0;
@@ -56,10 +60,11 @@ void serialEvent() {
   static char buf[0x400];
 
   struct serialPoint pt;
+  int32_t loopms = 0;
 
   if (bytes_to_read == 0) {
     // at the start of a message
-    if (Serial.available() < sizeof(bytes_to_read)) {
+    if (Serial.available() < sizeof(bytes_to_read) + sizeof(loopms)) {
       // wait for more
       return;
     }
@@ -68,6 +73,8 @@ void serialEvent() {
     ga.clear();
     node = (uint8_t)-1;
     points_to_read = 0;
+    // get the time
+    Serial.readBytes(&loopms, sizeof(loopms));
     // fall through
   }
   while (bytes_to_read > 0) {

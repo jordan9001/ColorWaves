@@ -13,7 +13,8 @@ class GradientAnimator {
         void clear(void);
         bool addPoint(uint8_t node, uint32_t color, uint16_t index, int32_t msoff);
         bool getGradient(uint32_t* colors, uint16_t len, int32_t ms);
-        void setLooptime(uint32_t ms);
+        void setLooptime(int32_t ms);
+        int32_t getLooptime();
     
         private:
         struct point {
