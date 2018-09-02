@@ -50,7 +50,7 @@ func (d DispInfo) Serialize(bo binary.ByteOrder, numlights uint16) []byte {
 
 	bo.PutUint16(buf[c:], uint16(bytelen))
 	c += 2
-	bo.PutUint32(buf[c:], d.LoopTime)
+	bo.PutUint32(buf[c:], (d.LoopTime * 1000))
 	c += 4
 
 	for i := range d.Nodes {
@@ -59,7 +59,7 @@ func (d DispInfo) Serialize(bo binary.ByteOrder, numlights uint16) []byte {
 		for _, v := range d.Nodes[i] {
 			bo.PutUint32(buf[c:], v.Color) // color
 			c += 4
-			bo.PutUint32(buf[c:], uint32(float32(d.LoopTime)*v.LoopOff)) // time offset
+			bo.PutUint32(buf[c:], uint32(float32(d.LoopTime*1000)*v.LoopOff)) // time offset
 			c += 4
 			bo.PutUint16(buf[c:], uint16(float32(numlights)*v.GradOff)) // index
 			c += 2

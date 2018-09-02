@@ -5,23 +5,15 @@
 #include "personal_info.h" // contains my ssid, password, servername, etc
 #include "GradientAnimator.h"
 
-#define LOOPTIME_T		int32_t
-#define POINTCOUNT_T	uint16_t
-#define PT_COLOR_T		uint32_t
-#define PT_MSOFF_T		int32_t
-#define PT_INDEX_T		uint16_t
+#define PIN				22  // data pin
+#define NUMPIXELS		150
+#define DTIME			10 // ms
+#define ERROR_DELAY		3000
+#define PING_TIME		6000
 
-#define POINT_LEN       (sizeof(PT_COLOR_T) + sizeof(PT_MSOFF_T) + sizeof(PT_INDEX_T))
-#define MIN_BUFFER_LEN  (sizeof(LOOPTIME_T) + sizeof(POINTCOUNT_T) + POINT_LEN)
+#define USE_SERIAL		Serial
 
-#define USE_SERIAL     Serial
-#define PIN            22  // data pin
-#define NUMPIXELS      150
-#define DTIME          1000 // ms
-#define ERROR_DELAY    3000
-#define PING_TIME      6000
-
-#define BUFSZ       0x1000
+#define BUFSZ			0x1000
 uint8_t recvbuf[BUFSZ];
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
@@ -70,9 +62,20 @@ void loop() {
 		goto exit;
 	}
 
-	for(int i=0;i<NUMPIXELS;i++){
-		USE_SERIAL.printf("%d: #%x\n", i, colors[i]); 
-		//pixels.setPixelColor(i, colors[i]);
+	//DEBUG
+	/*USE_SERIAL.println("Colors:");
+	for (uint16_t i=0; i<NUMPIXELS; i++) {
+		USE_SERIAL.print(colors[i], HEX);
+		
+		if (!((i+1)%10)) {
+			USE_SERIAL.println();
+		} else {
+			USE_SERIAL.print(" ");
+		}
+	}*/
+
+	for (uint16_t i=0; i<NUMPIXELS; i++) {
+		pixels.setPixelColor(i, colors[i]);
 	}
 
 	// attempt to get rid of glitches by disabling interrupts
@@ -134,61 +137,9 @@ bool GetPattern() {
 			return false;
 		}
 		i += amtread;
-		USE_SERIAL.printf("0x%x / 0x%x\n", i, bsz);
 	}
 
 	USE_SERIAL.println("Got update, parsing");
 
-	return parseBuffer(recvbuf, bsz);
-}
-
-bool parseBuffer(uint8_t* buf, uint16_t sz) {
-	if (sz < MIN_BUFFER_LEN) {
-		USE_SERIAL.printf("Bad buffer size passed in, only 0x%x bytes\n", sz);
-		return false;
-	}
-	ga.clear();
-
-	uint8_t* cur;
-	LOOPTIME_T lpt;
-	POINTCOUNT_T pointcount;
-	POINTCOUNT_T i;
-	PT_COLOR_T p_c;
-	PT_MSOFF_T p_m;
-	PT_INDEX_T p_i;
-	uint8_t node_i = 0;
-
-	cur = buf;
-	lpt = *((LOOPTIME_T*)cur);
-	USE_SERIAL.printf("Got looptime as %d\n", lpt);
-	ga.setLooptime(lpt);
-	cur += sizeof(LOOPTIME_T);
-	while (cur < (buf + sz)) {
-		pointcount = *((POINTCOUNT_T*)cur);
-		cur += sizeof(POINTCOUNT_T);
-
-		if ((cur + (pointcount * POINT_LEN)) > (buf + sz)) {
-			USE_SERIAL.printf("Pointcount would send up past end of buffer. 0x%x\n", pointcount);
-			return false;
-		}
-
-		USE_SERIAL.printf("Node %d has %d points\n", node_i, pointcount);
-
-		for (i=0; i<pointcount; i++) {
-			p_c = *((PT_COLOR_T*)cur);
-			cur += sizeof(PT_COLOR_T);
-			p_m = *((PT_MSOFF_T*)cur);
-			cur += sizeof(PT_MSOFF_T);
-			p_i = *((PT_INDEX_T*)cur);
-			cur += sizeof(PT_INDEX_T);
-
-			if (!ga.addPoint(node_i, p_c, p_i, p_m)) {
-				USE_SERIAL.println("Used up too many points!");
-				return false;
-			}
-		}
-		node_i++;
-	}
-
-	return true;
+	return ga.parseBuffer(recvbuf, bsz);
 }
