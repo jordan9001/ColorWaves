@@ -5,12 +5,9 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"net"
 	"net/http"
-	"os"
-	"os/exec"
 	"path/filepath"
-
-	"github.com/jacobsa/go-serial/serial"
 )
 
 // Point Single color point in gradient
@@ -25,6 +22,8 @@ type DispInfo struct {
 	Nodes    [][]Point `json:"n"`
 	LoopTime uint32    `json:"t"`
 }
+
+const hardwarePort string = ":8383"
 
 // global for communication
 var di chan *DispInfo
@@ -55,20 +54,20 @@ func (d DispInfo) Serialize(bo binary.ByteOrder, numlights uint16) []byte {
 	c += 4
 
 	for i := range d.Nodes {
-		bo.PutUint16(buf[c:], uint16(len(d.Nodes[i])))
+		bo.PutUint16(buf[c:], uint16(len(d.Nodes[i]))) // len of node
 		c += 2
 		for _, v := range d.Nodes[i] {
-			bo.PutUint32(buf[c:], v.Color)
+			bo.PutUint32(buf[c:], v.Color) // color
 			c += 4
-			bo.PutUint32(buf[c:], uint32(float32(d.LoopTime)*v.LoopOff))
+			bo.PutUint32(buf[c:], uint32(float32(d.LoopTime)*v.LoopOff)) // time offset
 			c += 4
-			bo.PutUint16(buf[c:], uint16(float32(numlights)*v.GradOff))
+			bo.PutUint16(buf[c:], uint16(float32(numlights)*v.GradOff)) // index
 			c += 2
 		}
 	}
 
 	if c != bytelen {
-		log.Fatalf("Did not correctly serialize\n")
+		log.Fatalf("Did not correctly serialize")
 	}
 
 	return buf
@@ -82,7 +81,7 @@ func parseDispJSON(body io.ReadCloser) *DispInfo {
 
 	err := dec.Decode(&decobj)
 	if err != nil {
-		log.Printf("Unable to decode json\n")
+		log.Printf("Unable to decode json")
 		return nil
 	}
 
@@ -108,80 +107,45 @@ func gradEditor(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func hardSerial() error {
-	options := serial.OpenOptions{
-		PortName:        "COM4",
-		BaudRate:        115200,
-		DataBits:        8,
-		StopBits:        1,
-		MinimumReadSize: 4,
-	}
-	log.Printf("Starting Serial Connection to %q\n", options.PortName)
-
-	// TODO actually connect to the serial thing
-	port, err := serial.Open(options)
-	if err != nil {
-		log.Fatalf("Serial.Open: %v", err)
-	}
-
-	defer port.Close()
-
-	// start routine for debug communication
-	go func() {
-		debugbuf := make([]byte, 1024)
-		i, err := port.Read(debugbuf)
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("Device : %q\n", string(debugbuf[:i]))
-	}()
-
-	//TODO do routine that serializes and sends data down the line
-
-	return nil
-}
-
-func debugSerial() error {
-	const debugFPath string = "./Hardware/DebugLib/serialized.bin"
-	const debugCPath string = "./Hardware/DebugLib/debugcmd"
-	// start routine
-	go func() {
-		// read from the chan
-		var d *DispInfo
-		for {
-			d = <-di
-			log.Printf("Got Display Info:\n%#v\n\n", d)
-
-			buf := d.Serialize(binary.LittleEndian, 150)
-
-			// write debug file
-			f, err := os.Create(debugFPath)
-			if err != nil {
-				log.Fatal(err)
-			}
-			_, err = f.Write(buf)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			log.Printf("Starting Library debugger:\n")
-
-			// send buf to debug program
-			// print the output from the debug program
-			out, err := exec.Command(debugCPath, debugFPath).Output()
-			if err != nil {
-				log.Fatal(err)
-			}
-			log.Printf("\nDebugger :\n%q\n\n", string(out))
-		}
-	}()
-	return nil
-}
-
 func callHard() error {
-	// paramaterize this for different hardware or debugging
-	return debugSerial()
-	//return hardSerial()
+	log.Printf("Starting Socket Listener on port %v", hardwarePort)
+
+	s, err := net.Listen("tcp", hardwarePort)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for {
+			log.Println("\nWaiting for Accept...")
+			con, err := s.Accept()
+			if err != nil {
+				log.Fatalf("Bad Accept: %v", err)
+			}
+			log.Printf("Got connection from %v", con.RemoteAddr())
+
+			// if we get an updated display info, we will accept connections
+			var buf []byte
+			select {
+			case newdisp := <-di:
+				buf = newdisp.Serialize(binary.LittleEndian, 150)
+				log.Printf("Sending out new pattern, should have size %x", binary.LittleEndian.Uint16(buf[:2]))
+			default:
+				buf = []byte{0x0, 0x0} // nothing new
+				log.Printf("No new pattern to send")
+			}
+			// if we wanted to use this in a robust way, we would use tls and check a client cert here
+			// but if you want to mitm my leds, more power to you maybe I will put a ctf flag in there even.
+
+			con.Write(buf[:2])
+			if len(buf[2:]) > 0 {
+				con.Write(buf[2:])
+			}
+			con.Close()
+		}
+	}()
+
+	return nil
 }
 
 func main() {
@@ -197,6 +161,6 @@ func main() {
 	// be a server
 	var PORT = ":5077" // 0x13D5
 	http.HandleFunc("/", gradEditor)
-	log.Printf("Starting Server on port %q\n", PORT)
+	log.Printf("Starting Server on port %q", PORT)
 	log.Fatal(http.ListenAndServe(PORT, nil))
 }
