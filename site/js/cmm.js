@@ -1,7 +1,35 @@
 // ColorMeMine interface
 
+const brighten_val = 2;
+
 // helper functions
-function num2color(n) {
+
+function brighten_color(n) {
+
+    let r = (n>>16) & 0xff;
+    let g = (n>>8) & 0xff;
+    let b = (n) & 0xff;
+
+    r = r * brighten_val;
+    g = g * brighten_val;
+    b = b * brighten_val;
+
+    if (r > 0xff) {
+        r = 0xff;
+    }
+    if (g > 0xff) {
+        g = 0xff;
+    }
+    if (b > 0xff) {
+        b = 0xff;
+    }
+
+    return (r << 16) | (g << 8) | (b);
+}
+function num2color(n, brighten=true) {
+    if (brighten) {
+        n = brighten_color(n);
+    }
     return '#' + n.toString(16).padStart(6, '0');
 }
 
@@ -453,7 +481,7 @@ doccanvas.addEventListener("mousedown", function(evt) {
     // if we have a point selected, make it the sel_pt;
     if (ns != -1 && ps != -1) {
         color_control.sel_pt = color_control.nodes[ns].points[ps];
-        colorpicker.setHex(num2color(color_control.sel_pt.color));
+        colorpicker.setHex(num2color(color_control.sel_pt.color, false));
         return;
     }
 
@@ -470,7 +498,7 @@ doccanvas.addEventListener("mousedown", function(evt) {
             color_control.nodes.push(dn);
         }
         color_control.sel_pt = pt;
-        colorpicker.setHex(num2color(pt.color));
+        colorpicker.setHex(num2color(pt.color, false));
         color_control.potential_point = null;
         return;
     }

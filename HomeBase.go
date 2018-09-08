@@ -126,11 +126,22 @@ func callHard() error {
 
 			// if we get an updated display info, we will accept connections
 			var buf []byte
-			select {
-			case newdisp := <-di:
+
+			var newdisp *DispInfo
+			found := false
+			for found == false {
+				select {
+				case newdisp = <-di:
+					found = true
+				default:
+					found = false
+				}
+			}
+
+			if newdisp != nil {
 				buf = newdisp.Serialize(binary.LittleEndian, 150)
 				log.Printf("Sending out new pattern, should have size %x", binary.LittleEndian.Uint16(buf[:2]))
-			default:
+			} else {
 				buf = []byte{0x0, 0x0} // nothing new
 				log.Printf("No new pattern to send")
 			}

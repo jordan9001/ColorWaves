@@ -1,9 +1,18 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <Adafruit_NeoPixel.h>
 #include "personal_info.h" // contains my ssid, password, servername, etc
 #include "GradientAnimator.h"
+
+#define USE_OTHER_LIB
+
+#ifdef USE_OTHER_LIB
+#include "WS2812_ESP_RMT.h"
+#else
+#include <Adafruit_NeoPixel.h>
+#endif
+
+
 
 #define PIN				22  // data pin
 #define NUMPIXELS		150
@@ -16,13 +25,22 @@
 #define BUFSZ			0x1000
 uint8_t recvbuf[BUFSZ];
 
+#ifdef USE_OTHER_LIB
+ESPRMTLED pixels = ESPRMTLED(NUMPIXELS, PIN, RMT_CHANNEL_0);
+#else
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+#endif
+
 GradientAnimator ga = GradientAnimator();
 
 void setup() {
 	USE_SERIAL.begin(115200);
 
+	#ifdef USE_OTHER_LIB
+	#else
 	pixels.begin();
+	#endif
+	
 
 	USE_SERIAL.println();
 	USE_SERIAL.println();
@@ -62,28 +80,24 @@ void loop() {
 		goto exit;
 	}
 
-	//DEBUG
-	/*USE_SERIAL.println("Colors:");
-	for (uint16_t i=0; i<NUMPIXELS; i++) {
-		USE_SERIAL.print(colors[i], HEX);
-		
-		if (!((i+1)%10)) {
-			USE_SERIAL.println();
-		} else {
-			USE_SERIAL.print(" ");
-		}
-	}*/
+	
 
+#ifdef USE_OTHER_LIB
 	for (uint16_t i=0; i<NUMPIXELS; i++) {
 		pixels.setPixelColor(i, colors[i]);
 	}
-
+	pixels.show();
+#else
+	for (uint16_t i=0; i<NUMPIXELS; i++) {
+		pixels.setPixelColor(i, colors[i]);
+	}
 	// attempt to get rid of glitches by disabling interrupts
 	// this helps, but I should probably implements pixels myself with rmt functionality in the esp32.
 	portDISABLE_INTERRUPTS();
-	delay(1);
 	pixels.show();
 	portENABLE_INTERRUPTS(); 
+#endif
+
 
 	t = (t + DTIME) % ga.getLooptime();
 	exit:
